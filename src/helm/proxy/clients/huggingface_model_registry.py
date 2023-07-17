@@ -33,6 +33,9 @@ class HuggingFaceHubModelConfig:
 
     If None, use the default revision."""
 
+    quantize: bool
+    """ Whether to quantize the model. """
+
     @property
     def model_id(self) -> str:
         """Return the model ID.
@@ -59,21 +62,26 @@ class HuggingFaceHubModelConfig:
         return result
 
     @staticmethod
-    def from_string(raw: str) -> "HuggingFaceHubModelConfig":
-        """Parses a string in the format "[namespace/]model_name[@revision]" to a HuggingFaceHubModelConfig.
+    def from_string(raw: str):
+        """Parses a string in the format "[namespace/]model_name[@revision][-quantized]" to a HuggingFaceHubModelConfig.
 
         Examples:
         - 'gpt2'
+        - 'gpt2-quantized'
         - 'stanford-crfm/BioMedLM'
-        - 'stanford-crfm/BioMedLM@main'"""
-        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+))?"
+        - 'stanford-crfm/BioMedLM@main'
+        - 'stanford-crfm/BioMedLM@main-quantized'"""
+        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+))?(-quantized)?"
         match = re.fullmatch(pattern, raw)
         if not match:
-            raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision]")
+            raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
         model_name = match.group("model_name")
         assert model_name
         return HuggingFaceHubModelConfig(
-            namespace=match.group("namespace"), model_name=model_name, revision=match.group("revision")
+            namespace=match.group("namespace"),
+            model_name=model_name,
+            revision=match.group("revision"),
+            quantize=True if match.group(0).endswith('-quantized') else False
         )
 
 

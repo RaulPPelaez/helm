@@ -1,7 +1,7 @@
 from copy import deepcopy
 import torch
 from dataclasses import asdict
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
 from typing import Any, Dict, List
 
 from helm.common.cache import Cache, CacheConfig
@@ -14,6 +14,7 @@ from helm.common.tokenization_request import (
     DecodeRequestResult,
     TokenizationToken,
 )
+
 from .client import Client, wrap_request_time, truncate_sequence, cleanup_tokens
 from .huggingface_tokenizer import HuggingFaceTokenizers
 from helm.proxy.clients.huggingface_model_registry import (
@@ -41,6 +42,15 @@ class HuggingFaceServer:
             model_name = model_config.model_id
             if model_config.revision:
                 model_kwargs["revision"] = model_config.revision
+            if model_config.quantize:
+                nf4_config = BitsAndBytesConfig(
+                    load_in_8bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
+                model_kwargs["torch_dtype"] = torch.bfloat16
+                model_kwargs["quantization_config"] =nf4_config
         else:
             raise Exception(f"Unknown type of model_config: {model_config}")
         with htrack_block(f"Loading Hugging Face model for config {model_config}"):
