@@ -1,7 +1,7 @@
 from copy import deepcopy
 import torch
 from dataclasses import asdict
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from typing import Any, Dict, List
 
 from helm.common.cache import Cache, CacheConfig
