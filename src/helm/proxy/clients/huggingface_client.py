@@ -46,7 +46,7 @@ class HuggingFaceServer:
                 nf4_config = BitsAndBytesConfig(
                     load_in_8bit=True,
                     bnb_4bit_quant_type="nf4",
-                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_use_double_quant=False,
                     bnb_4bit_compute_dtype=torch.bfloat16,
                 )
                 model_kwargs["torch_dtype"] = torch.bfloat16
@@ -55,9 +55,7 @@ class HuggingFaceServer:
             raise Exception(f"Unknown type of model_config: {model_config}")
         with htrack_block(f"Loading Hugging Face model for config {model_config}"):
             # WARNING this may fail if your GPU does not have enough memory
-            self.model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, **model_kwargs).to(
-                self.device
-            )
+            self.model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, **model_kwargs)
         with htrack_block(f"Loading Hugging Face tokenizer model for config {model_config}"):
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, **model_kwargs)
 
