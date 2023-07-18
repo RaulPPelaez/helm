@@ -21,7 +21,7 @@ class ToxicityMetric(Metric):
 
     def __init__(self):
         super().__init__()
-        self._perspective_api_unavailable = False
+        self._perspective_api_unavailable = True
 
     def __repr__(self):
         return "ToxicityMetric()"
