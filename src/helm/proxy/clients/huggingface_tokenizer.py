@@ -61,7 +61,7 @@ class HuggingFaceTokenizers:
                 # the Hugging Face Transformers library, while the fast versions are the ones provided by Hugging Face
                 # Tokenizers, which are written in Rust." So, use the "fast" version of the tokenizers if available.
                 return AutoTokenizer.from_pretrained(
-                    hf_tokenizer_name, local_files_only=True, use_fast=True, **tokenizer_kwargs
+                    hf_tokenizer_name, trust_remote_code=True, local_files_only=False, use_fast=True, **tokenizer_kwargs
                 )
             except OSError:
                 hlog(f"Local files do not exist for HuggingFace tokenizer: {hf_tokenizer_name}. Downloading...")
