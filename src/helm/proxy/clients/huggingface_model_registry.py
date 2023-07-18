@@ -71,7 +71,7 @@ class HuggingFaceHubModelConfig:
         - 'stanford-crfm/BioMedLM'
         - 'stanford-crfm/BioMedLM@main'
         - 'stanford-crfm/BioMedLM@main-quantized'"""
-        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+))?(-quantized)?"
+        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
         match = re.fullmatch(pattern, raw)
         if not match:
             raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
@@ -149,7 +149,7 @@ def register_huggingface_hub_model_config(model_name: str) -> HuggingFaceHubMode
         description += f" at revision {config.revision}"
     model = Model(
         group=config.namespace,
-        name=model_name,
+        name=config.model_id,
         tags=[TEXT_MODEL_TAG, FULL_FUNCTIONALITY_TEXT_MODEL_TAG],
     )
     MODEL_NAME_TO_MODEL[config.model_id] = model
