@@ -180,7 +180,7 @@ class HuggingFaceClient(Client):
             elif model == "mosaicml/mpt-7b":
                 model_config = HuggingFaceHubModelConfig.from_string("mosaicml/mpt-7b")
             else:
-                raise Exception(f"Unknown HuggingFace model: {model}")
+                model_config = HuggingFaceHubModelConfig.from_string(model)
         return _get_singleton_server(model_config)
 
     def make_request(self, request: Request) -> RequestResult:
