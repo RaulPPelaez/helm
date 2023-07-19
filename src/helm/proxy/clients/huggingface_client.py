@@ -44,29 +44,32 @@ class HuggingFaceServer:
                 model_kwargs["revision"] = model_config.revision
             if model_config.quantize:
                 nf4_config = BitsAndBytesConfig(
-                    load_in_8bit=True,
+                    load_in_4bit=True,
                     bnb_4bit_quant_type="nf4",
-                    bnb_4bit_use_double_quant=False,
+                    bnb_4bit_use_double_quant=True,
                     bnb_4bit_compute_dtype=torch.bfloat16,
                 )
                 model_kwargs["torch_dtype"] = torch.bfloat16
-                model_kwargs["quantization_config"] =nf4_config
+                model_kwargs["quantization_config"] = nf4_config
         else:
             raise Exception(f"Unknown type of model_config: {model_config}")
         with htrack_block(f"Loading Hugging Face model for config {model_config}"):
             # WARNING this may fail if your GPU does not have enough memory
             self.model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, **model_kwargs)
+        if not model_config.quantize:
+            self.model = self.model.to(self.device)
         with htrack_block(f"Loading Hugging Face tokenizer model for config {model_config}"):
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, **model_kwargs)
 
     def serve_request(self, raw_request: Dict[str, Any]):
-        encoded_input = self.tokenizer(raw_request["prompt"], return_tensors="pt", return_token_type_ids=False).to(
+        encoded_input = self.tokenizer(raw_request["prompt"], return_tensors="pt", return_token_type_ids=False, truncation=True, max_length=2040).to(
             self.device
         )
         raw_request = deepcopy(raw_request)
         raw_request["do_sample"] = True
         raw_request["return_dict_in_generate"] = True
         raw_request["output_scores"] = True
+        raw_request["pad_token_id"] = self.tokenizer.eos_token_id
         top_k_per_token: int = raw_request["top_k_per_token"]
         del raw_request["top_k_per_token"]
         if len(raw_request["stop_sequences"]) > 0:
@@ -84,7 +87,6 @@ class HuggingFaceServer:
             for key in raw_request
             if key not in ["engine", "prompt", "echo_prompt", "stop_sequences"]
         }
-
         # Use HuggingFace's `generate` method.
         output = self.model.generate(**encoded_input, **relevant_raw_request)
         sequences = output.sequences
