@@ -254,8 +254,8 @@ def main():
 
     for huggingface_model_name in args.enable_huggingface_models:
         register_huggingface_hub_model_config(huggingface_model_name)
-    for huggingface_model_path in args.enable_local_huggingface_models:
-        register_huggingface_local_model_config(huggingface_model_path, huggingface_model_name)
+    for huggingface_model_path, model_name in zip(args.enable_local_huggingface_models, args.models_to_run):
+        register_huggingface_local_model_config(huggingface_model_path, model_name)
 
     if args.server_url and args.enable_remote_models:
         check_and_register_remote_model(args.server_url, args.enable_remote_models)

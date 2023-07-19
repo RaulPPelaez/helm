@@ -116,19 +116,23 @@ class HuggingFaceLocalModelConfig:
         return f"huggingface/{self.model_name}"
 
     @staticmethod
-    def from_path(path: str, raw: str) -> "HuggingFaceLocalModelConfig":
+    def from_path(path: str, raw: Optional[str]) -> "HuggingFaceLocalModelConfig":
         """Generates a HuggingFaceHubModelConfig from a (relative or absolute) path to a local HuggingFace model."""
-        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
-        match = re.fullmatch(pattern, raw)
-        if not match:
-            raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
-        raw_model_name = match.group("model_name")
+        if not raw == None:
+            pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
+            match = re.fullmatch(pattern, raw)
+            if not match:
+                raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
+            raw_model_name = match.group("model_name")
 
-        model_name = os.path.split(path)[-1]
+            model_name = os.path.split(path)[-1]
 
-        assert model_name == raw_model_name
+            assert model_name == raw_model_name
+            quantize = True if match.group(0).endswith('-quantized') else False
+        else:
+            quantize = False
 
-        return HuggingFaceLocalModelConfig(model_name=model_name, path=path, quantize=True if match.group(0).endswith('-quantized') else False)
+        return HuggingFaceLocalModelConfig(model_name=model_name, path=path, quantize=quantize)
 
 
 HuggingFaceModelConfig = Union[HuggingFaceHubModelConfig, HuggingFaceLocalModelConfig]
@@ -136,7 +140,7 @@ HuggingFaceModelConfig = Union[HuggingFaceHubModelConfig, HuggingFaceLocalModelC
 
 # Initialize registry with local models from models.py
 _huggingface_model_registry: Dict[str, HuggingFaceModelConfig] = {
-    model.name: HuggingFaceLocalModelConfig.from_path(os.path.join(LOCAL_HUGGINGFACE_MODEL_DIR, model.engine))
+    model.name: HuggingFaceLocalModelConfig.from_path(os.path.join(LOCAL_HUGGINGFACE_MODEL_DIR, model.engine), None)
     for model in ALL_MODELS
     if LOCAL_HUGGINGFACE_MODEL_TAG in model.tags
 }
