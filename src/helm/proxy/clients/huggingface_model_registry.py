@@ -170,11 +170,11 @@ def register_huggingface_hub_model_config(model_name: str) -> HuggingFaceHubMode
     return config
 
 
-def register_huggingface_local_model_config(path: str) -> HuggingFaceLocalModelConfig:
+def register_huggingface_local_model_config(path: str, model_name: str) -> HuggingFaceLocalModelConfig:
     """Register a AutoModelForCausalLM model from a local directory for later use.
 
     path: a path to your HF model"""
-    config = HuggingFaceLocalModelConfig.from_path(path)
+    config = HuggingFaceLocalModelConfig.from_path(path, model_name)
     if config.model_id in _huggingface_model_registry:
         raise ValueError(f"A Hugging Face model is already registered for model_id {config.model_id}")
     _huggingface_model_registry[config.model_id] = config
