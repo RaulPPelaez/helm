@@ -38,6 +38,15 @@ class HuggingFaceServer:
         # Otherwise, download it from the HuggingFace hub by passing in its identifier.
         if isinstance(model_config, HuggingFaceLocalModelConfig):
             model_name = model_config.path
+            if model_config.quantize:
+                nf4_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
+                model_kwargs["torch_dtype"] = torch.bfloat16
+                model_kwargs["quantization_config"] = nf4_config
         elif isinstance(model_config, HuggingFaceHubModelConfig):
             model_name = model_config.model_id
             if model_config.revision:

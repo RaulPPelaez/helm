@@ -96,6 +96,9 @@ class HuggingFaceLocalModelConfig:
     this will get set to LOCAL_HUGGINGFACE_MODEL_DIR by default.
     Otherwise, this is specified using the flag --enable-local-huggingface-models <path>."""
 
+    quantize: bool
+    """ Whether to quantize the model. """
+
     @property
     def model_id(self) -> str:
         """Return the model ID.
@@ -113,10 +116,19 @@ class HuggingFaceLocalModelConfig:
         return f"huggingface/{self.model_name}"
 
     @staticmethod
-    def from_path(path: str) -> "HuggingFaceLocalModelConfig":
+    def from_path(path: str, raw: str) -> "HuggingFaceLocalModelConfig":
         """Generates a HuggingFaceHubModelConfig from a (relative or absolute) path to a local HuggingFace model."""
+        pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
+        match = re.fullmatch(pattern, raw)
+        if not match:
+            raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
+        raw_model_name = match.group("model_name")
+
         model_name = os.path.split(path)[-1]
-        return HuggingFaceLocalModelConfig(model_name=model_name, path=path)
+
+        assert model_name == raw_model_name
+
+        return HuggingFaceLocalModelConfig(model_name=model_name, path=path, quantize=True if match.group(0).endswith('-quantized') else False)
 
 
 HuggingFaceModelConfig = Union[HuggingFaceHubModelConfig, HuggingFaceLocalModelConfig]
