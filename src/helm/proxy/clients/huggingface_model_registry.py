@@ -118,14 +118,13 @@ class HuggingFaceLocalModelConfig:
     @staticmethod
     def from_path(path: str, raw: Optional[str]) -> "HuggingFaceLocalModelConfig":
         """Generates a HuggingFaceHubModelConfig from a (relative or absolute) path to a local HuggingFace model."""
+        model_name = os.path.split(path)[-1]
         if not raw == None:
             pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
             match = re.fullmatch(pattern, raw)
             if not match:
                 raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
             raw_model_name = match.group("model_name")
-
-            model_name = os.path.split(path)[-1]
 
             assert model_name == raw_model_name
             quantize = True if match.group(0).endswith('-quantized') else False
