@@ -96,6 +96,9 @@ class HuggingFaceLocalModelConfig:
     this will get set to LOCAL_HUGGINGFACE_MODEL_DIR by default.
     Otherwise, this is specified using the flag --enable-local-huggingface-models <path>."""
 
+    quantize: bool
+    """ Whether to quantize the model. """
+
     @property
     def model_id(self) -> str:
         """Return the model ID.
@@ -113,10 +116,22 @@ class HuggingFaceLocalModelConfig:
         return f"huggingface/{self.model_name}"
 
     @staticmethod
-    def from_path(path: str) -> "HuggingFaceLocalModelConfig":
+    def from_path(path: str, raw: Optional[str]) -> "HuggingFaceLocalModelConfig":
         """Generates a HuggingFaceHubModelConfig from a (relative or absolute) path to a local HuggingFace model."""
         model_name = os.path.split(path)[-1]
-        return HuggingFaceLocalModelConfig(model_name=model_name, path=path)
+        if not raw == None:
+            pattern = r"((?P<namespace>[^/@]+)/)?(?P<model_name>[^/@]+)(@(?P<revision>[^/@]+?))?(?P<quantized>-quantized)?"
+            match = re.fullmatch(pattern, raw)
+            if not match:
+                raise ValueError(f"Could not parse model name: '{raw}'; Expected format: [namespace/]model_name[@revision][-quantized]")
+            raw_model_name = match.group("model_name")
+
+            assert model_name == raw_model_name
+            quantize = True if match.group(0).endswith('-quantized') else False
+        else:
+            quantize = False
+
+        return HuggingFaceLocalModelConfig(model_name=model_name, path=path, quantize=quantize)
 
 
 HuggingFaceModelConfig = Union[HuggingFaceHubModelConfig, HuggingFaceLocalModelConfig]
@@ -124,7 +139,7 @@ HuggingFaceModelConfig = Union[HuggingFaceHubModelConfig, HuggingFaceLocalModelC
 
 # Initialize registry with local models from models.py
 _huggingface_model_registry: Dict[str, HuggingFaceModelConfig] = {
-    model.name: HuggingFaceLocalModelConfig.from_path(os.path.join(LOCAL_HUGGINGFACE_MODEL_DIR, model.engine))
+    model.name: HuggingFaceLocalModelConfig.from_path(os.path.join(LOCAL_HUGGINGFACE_MODEL_DIR, model.engine), None)
     for model in ALL_MODELS
     if LOCAL_HUGGINGFACE_MODEL_TAG in model.tags
 }
@@ -158,11 +173,11 @@ def register_huggingface_hub_model_config(model_name: str) -> HuggingFaceHubMode
     return config
 
 
-def register_huggingface_local_model_config(path: str) -> HuggingFaceLocalModelConfig:
+def register_huggingface_local_model_config(path: str, model_name: str) -> HuggingFaceLocalModelConfig:
     """Register a AutoModelForCausalLM model from a local directory for later use.
 
     path: a path to your HF model"""
-    config = HuggingFaceLocalModelConfig.from_path(path)
+    config = HuggingFaceLocalModelConfig.from_path(path, model_name)
     if config.model_id in _huggingface_model_registry:
         raise ValueError(f"A Hugging Face model is already registered for model_id {config.model_id}")
     _huggingface_model_registry[config.model_id] = config
